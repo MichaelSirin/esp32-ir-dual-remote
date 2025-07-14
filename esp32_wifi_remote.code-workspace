@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../../../C_Projects/esp32_wifi_remote"
+		},
+		{
+			"name": "esp32_ir_receiver",
+			"path": "."
+		}
+	],
+    "settings": {}
+}
