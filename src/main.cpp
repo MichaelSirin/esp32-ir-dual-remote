@@ -1,43 +1,54 @@
 #include <Arduino.h>
 #include <IRremoteESP8266.h>
 #include <IRrecv.h>
+#include <IRsend.h>
 #include <IRutils.h>
 
 // Change this to DATA pin on which you connected the IR receiver
-int RECV_PIN  = 2;      // GPIO2 (pin 4)
-int LED_PIN  = 3;      // GPIO3 (pin 5)
+const uint8_t  IR_RECV_PIN  = 2;      // GPIO2 (pin 4)
+const uint8_t  IR_SEND_PIN = 1;      // GPIO21 (pin 2)
+const uint8_t  LED_PIN  = 3;          // GPIO3 (pin 5)
 
-IRrecv irrecv(RECV_PIN);
+IRrecv irrecv(IR_RECV_PIN);
 decode_results results;
 
+IRsend irsend(IR_SEND_PIN);
+
 void setup() {
-  // 1) Инициализируем Serial
+  // Initialize serial communication at 115200 baud rate
   Serial.begin(115200);
   delay(500);
 
+  // Initialize IR receiver
   irrecv.enableIRIn();
   Serial.println("IR Receiver ready");
 
+  // Initialize IR transmitter
+  pinMode(IR_SEND_PIN, OUTPUT);
+  irsend.begin();
+  Serial.println("IR Transmitter ready");
+
   // Just to know which program is running on my Arduino
   Serial.println(F("START " __FILE__ " from " __DATE__));
-  Serial.println("Ready to receive IR codes");
-  Serial.println("Point your remote to IR receiver and start pressing buttons one-by-one.");
-  Serial.println("");
+  Serial.println("Setup complete");
 
   pinMode(LED_PIN, OUTPUT);
   Serial.println("Setup complete");
 }
 
-// void loop() {
-//   digitalWrite(LED_PIN, HIGH);
-//   delay(500);
-//   digitalWrite(LED_PIN, LOW);
-//   delay(500);
-// }
-
 void loop() {
 
-  // Inside the main loop, wait for IRremote library to successfully parse
+    // LG Volume Up в NEC-формате (32 бита, код 0x20DF40BF)
+    digitalWrite(LED_PIN, HIGH);
+    irsend.sendNEC(0x20DF40BF, 32);
+    delay(1000);          // Delay to prevent flooding the IR transmitter
+    digitalWrite(LED_PIN, LOW);
+
+    Serial.println("Sent LG Volume Up");
+    delay(1000);          // Delay to prevent flooding the IR transmitter
+
+  /*
+    // Inside the main loop, wait for IRremote library to successfully parse
   // incomming IR code and then print out over serial what is the
   // HEX code received and what type was detected.
   if (irrecv.decode(&results))
@@ -68,4 +79,6 @@ void loop() {
 
   // Delay to prevent flooding our serial output
   delay(300);
+    */
+
 }
