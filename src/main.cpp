@@ -260,10 +260,11 @@ void loop() {
 
     // LG Volume Up в NEC-формате (32 бита, код 0x20DF40BF)
     digitalWrite(LED_PIN, HIGH);
-    irsend.sendLG(IRcmd, IRlen, 2);
+    irsend.sendNEC(IRcmd, 32);
+
     Serial.printf("Sent LG code 0x%X\n", IRcmd);
     IRpending = false;
-    delay(100);  // Give some time for the IR signal to be sent
+    delay(200);  // Give some time for the IR signal to be sent
     digitalWrite(LED_PIN, LOW);
   }
 
