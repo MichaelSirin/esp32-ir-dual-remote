@@ -1,8 +1,8 @@
 #ifndef SK_IR_CODES_H
 #define SK_IR_CODES_H
 
-// Define LG TV IR remote structure (NEC, 38 kHz, 32 bit)
-typedef struct LG_Remote_t {
+// Define Remote structure (NEC, 38 kHz, 32 bit)
+typedef struct Remote_t {
   unsigned int  codeLen;
   unsigned long btnOnOff;
   unsigned long btn123;       // not used
@@ -21,9 +21,9 @@ typedef struct LG_Remote_t {
   unsigned long btnChUp;
   unsigned long btnChDown;
   unsigned long btnChEnter;   // not used
-} LG_Remote_t;
+} Remote_t;
 
-const LG_Remote_t RemoteCodes =
+const Remote_t RemoteCodes_LG =
 {
   .codeLen      = 32,
 
@@ -51,6 +51,37 @@ const LG_Remote_t RemoteCodes =
   .btnChUp      = 0x20DF00FF,  // Ch+
   .btnChDown    = 0x20DF807F,  // Ch–
   .btnChEnter   = 0x00000000   // not used
+};
+
+const Remote_t RemoteCodes_SAMSUNG =
+{
+    .codeLen      = 32,
+
+    // Power
+    .btnOnOff     = 0xE0E040BF,
+
+    // non-used buttons
+    .btn123       = 0xE0E04BB4,
+    .btnExtra     = 0xE0E0807F, // Source :contentReference[oaicite:2]{index=2
+
+    // Navigation
+    .btnUp        = 0xE0E006F9,
+    .btnDown      = 0xE0E08679,
+    .btnLeft      = 0xE0E0A659,
+    .btnRight     = 0xE0E046B9,
+    .btnOK        = 0xE0E016E9,
+    .btnReturn    = 0xE0E01AE5,
+    .btnHome      = 0xE0E09E61,
+    .btnPlayPause = 0xE0E0E21D,  
+
+    // Volume and Channels
+    .btnVolUp     = 0xE0E0E01F, // Vol+ :contentReference[oaicite:11]{index=11}
+    .btnVolDown   = 0xE0E0D02F, // Vol– :contentReference[oaicite:12]{index=12}
+    .btnVolEnter  = 0xE0E0F00F, // Mute :contentReference[oaicite:13]{index=13}
+
+    .btnChUp      = 0xE0E048B7, // Prog+ (Channel Up) :contentReference[oaicite:14]{index=14}
+    .btnChDown    = 0xE0E008F7, // Prog– (Channel Down) :contentReference[oaicite:15]{index=15}
+    .btnChEnter   = 0xE0E0C837  // Prev-Ch (Last Channel) :contentReference[oaicite:16]{index=16}
 };
 
 #endif // SK_IR_CODES_H

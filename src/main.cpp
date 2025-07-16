@@ -29,6 +29,12 @@ IRrecv irrecv(IR_RECV_PIN);
 IRsend irsend(IR_SEND_PIN);
 decode_results results;
 
+// TV model name
+const char* tvModel_LG = "LG";
+const char* tvModel_SAMSUNG = "SAMSUNG";
+
+char* tvModel = nullptr;   
+
 void onRequest(AsyncWebServerRequest *request) {
     // dummy callback function for handling params, etc.
 }
@@ -46,141 +52,115 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
 
   if (!error) {
     const char* command = doc["cmd"];
-    Serial.printf("command=%s, parsed=", command);
+    const char* brand   = doc["brand"]   | "LG";    // LG is default
+    
+    // chose the remote codes based on the brand
+    const Remote_t* codes = nullptr;
+    if (strcasecmp(brand, "LG") == 0) {
+        codes = &RemoteCodes_LG;
+        IRlen = codes->codeLen;
+        tvModel = (char*)tvModel_LG;
+    } else if (strcasecmp(brand, "SAMSUNG") == 0) {
+        codes = &RemoteCodes_SAMSUNG;
+        IRlen = codes->codeLen;
+        tvModel = (char*)tvModel_SAMSUNG;
+    } else {
+        tvModel = nullptr; // Unknown brand
+        request->send(400, "text/plain", "Unknown brand");
+        return;
+    }
+    // Serial.printf("command=%s, parsed=%s, brand=%s\n", command, doc["parsed"].as<String>().c_str(), brand);
+
 
     // Check which button was pressed
+    Serial.println("command: " + String(command));
     if( strncmp(command,"pwr",3) == 0 )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnOnOff, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnOnOff;
-      IRlen = 32;
+      IRcmd = codes->btnOnOff;
       IRpending = true;
-      Serial.println("OnOff");
     }
     else if(  strncmp(command,"up",2) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnUp, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnUp;
-      IRlen = 32;
+      IRcmd = codes->btnUp;
       IRpending = true;
-      Serial.println("up");
     }
 
     else if(  strncmp(command,"left",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnLeft, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnLeft;
-      IRlen = 32;
+      IRcmd = codes->btnLeft;
       IRpending = true;
-      Serial.println("left");
     }
 
     else if(  strncmp(command,"ok",2) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnOK, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnOK;
-      IRlen = 32;
+      IRcmd = codes->btnOK;
       IRpending = true;
-      Serial.println("ok");
     }
 
     else if(  strncmp(command,"right",5) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnRight, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnRight;
-      IRlen = 32;
+      IRcmd = codes->btnRight;
       IRpending = true;
-      Serial.println("right");
     }
 
     else if(  strncmp(command,"down",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnDown, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnDown;
-      IRlen = 32;
+      IRcmd = codes->btnDown;
       IRpending = true;
-      Serial.println("down");
     }
 
     else if(  strncmp(command,"back",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnReturn, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnReturn;
-      IRlen = 32;
+      IRcmd = codes->btnReturn;
       IRpending = true;
-      Serial.println("back");
     }
 
     else if(  strncmp(command,"home",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnHome, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnHome;
-      IRlen = 32;
+      IRcmd = codes->btnHome;
       IRpending = true;
-      Serial.println("home");
     }
 
     else if(  strncmp(command,"play",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnPlayPause, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnPlayPause;
-      IRlen = 32;
+      IRcmd = codes->btnPlayPause;
       IRpending = true;
-      Serial.println("play");
     }
 
     else if(  strncmp(command,"volup",5) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnVolUp, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnVolUp;
-      IRlen = 32;
+      IRcmd = codes->btnVolUp;
       IRpending = true;
-      Serial.println("volume-up");
     }
 
     else if(  strncmp(command,"chup",4) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnChUp, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnChUp;
-      IRlen = 32;
+      IRcmd = codes->btnChUp;
       IRpending = true;
-      Serial.println("channel-up");
     }
 
     else if(  strncmp(command,"volmute",7) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnVolEnter, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnVolEnter;
-      IRlen = 32;
+      IRcmd = codes->btnVolEnter;
       IRpending = true;
-      Serial.println("volume-mute");
     }
 
     else if(  strncmp(command,"chmiddle",8) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnChEnter, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnChEnter;
-      IRlen = 32;
+      IRcmd = codes->btnChEnter;
       IRpending = true;
-      Serial.println("channel-return");
     }
 
     else if(  strncmp(command,"volminus",8) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnVolDown, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnVolDown;
-      IRlen = 32;
+      IRcmd = codes->btnVolDown;
       IRpending = true;
-      Serial.println("volume-minus");
     }
 
     else if(  strncmp(command,"chminus",7) == 0  )
     {
-      //IrSender.sendSAMSUNG(RemoteCodes.btnChDown, RemoteCodes.codeLen);
-      IRcmd = RemoteCodes.btnChDown;
-      IRlen = 32;
+      IRcmd = RemoteCodes_LG.btnChDown;
       IRpending = true;
-      Serial.println("channel-minus");
     }
     else
     {
@@ -255,16 +235,19 @@ void setup() {
 }
 
 void loop() {
-  // Wait for a new command
-  if (IRpending) {
-
-    // LG Volume Up в NEC-формате (32 бита, код 0x20DF40BF)
+    // Wait for a new command
+  if (IRpending && tvModel != nullptr) {
+    Serial.printf("Sending code 0x%X to %s TV\n", IRcmd, tvModel);
     digitalWrite(LED_PIN, HIGH);
-    irsend.sendNEC(IRcmd, 32);
 
-    Serial.printf("Sent LG code 0x%X\n", IRcmd);
+    if(tvModel == tvModel_LG) {
+      irsend.sendNEC(IRcmd, IRlen);
+    } else if(tvModel == tvModel_SAMSUNG) {
+      irsend.sendSAMSUNG(IRcmd, IRlen);
+    } 
     IRpending = false;
     delay(200);  // Give some time for the IR signal to be sent
+
     digitalWrite(LED_PIN, LOW);
   }
 

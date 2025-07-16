@@ -1,64 +1,31 @@
 'use strict';
 
-  function sendButtonPress(id, display)
-  {
-    console.log(id);
+async function sendButtonPress(id, display) {
+    console.log('Button:', id);
 
-    document.getElementById('display').innerHTML=display;
-    setTimeout(function(){
-        document.getElementById("display").innerHTML = '';
-    }, 500);
+    const brand_name = document.getElementById('tvType').value;
 
-    return fetch(
-      `http://${location.host}/api`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          cmd: id,
-        }),
-        headers: {
-          'Content-Type': 'application/json'
+    const disp = document.getElementById('display');
+    if (!disp) {
+        console.error('Display element not found');
+        return;
+    }
+    
+    disp.textContent = display;
+    setTimeout(() => { disp.textContent = ''; }, 500);
+
+    try {
+        const resp = await fetch(`http://${location.host}/api`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ brand: brand_name, cmd: id }),
+        });
+        if (!resp.ok) {
+            console.error('Server error:', resp.status, await resp.text());
+            disp.textContent = `Error: ${resp.status}`;
         }
-      }
-    );
-  }
-
-document.addEventListener("DOMContentLoaded", function(event) {
-
-    // const animateIndicator = function() {
-    //     document.getElementById('indicator').style.display='block';
-    //     setTimeout(function(){
-    //         document.getElementById("indicator").style.display = 'none';
-    //     }, 50);
-    // }
-
-
-
-
-    // const sendRequest = function(id) {
-    //   console.log(id);
-    //   return;
-
-    //     return fetch(
-    //       `http://${location.host}/api`,
-    //       {
-    //         method: 'POST',
-    //         body: JSON.stringify({
-    //           command: 123,
-    //           code: 321
-    //         }),
-    //         headers: {
-    //           'Content-Type': 'application/json'
-    //         }
-    //       }
-    //     );
-    // }
-
-
-    // let promise;
-    // let targets = document.getElementsByClassName('button');
-    // for (let i = 0; i < targets.length; i++) {
-    //   targets[i].addEventListener("click", sendRequest(targets[i].id));
-    // }
-
-});
+    } catch (err) {
+        console.error('Network error:', err);
+        disp.textContent = 'Network error';
+    }
+}
