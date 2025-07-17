@@ -88,7 +88,6 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
     }
 
     // Check which button was pressed
-    // Serial.printf("command: %s\n", command);
     if( strncmp(command,"pwr",3) == 0 ) 
     {
       IRcmd = codes->btnOnOff;
@@ -154,8 +153,10 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
     else
     {
       Serial.println("Don't recognize cmd");
+      return;
     }
 
+    Serial.printf("TV model: %s, Command: %s, HEX code: %08X\n", tvModel, command, IRcmd);
     request->onDisconnect([]()
     {
         IRpending = true;
@@ -282,11 +283,10 @@ void sendNEC_custom(uint32_t data, uint8_t nbits) {
   // NEC header
   mark(9000); space(4500);
   // Data bits
-  for (uint8_t i = 0; i < nbits; i++) {
-    if (data & 1) { mark(560); space(1690); }
-    else           { mark(560); space(560); }
-    data >>= 1;
-  }
+  for (int8_t i = nbits - 1; i >= 0; i--) {
+    if (data & (1UL << i)) { mark(560); space(1690); }
+    else                   { mark(560); space(560); }
+    }
   // NEC footer
   mark(560);
   disableCarrier();
@@ -297,9 +297,11 @@ void sendSAMSUNG_custom(uint32_t data, uint8_t nbits) {
   // Samsung header
   mark(4500); space(4500);
   // Data bits
-  for (uint8_t i = 0; i < nbits; i++) {
-    if (data & 1) { mark(560); space(560); }
-    else           { mark(560); space(1690); }
+//   for (uint8_t i = 0; i < nbits; i++) {
+  for (int8_t i = nbits - 1; i >= 0; i--) {
+
+    if (data & (1UL << i)) { mark(560); space(560); }
+    else                   { mark(560); space(1690); }
     data >>= 1;
   }
   // Samsung footer
