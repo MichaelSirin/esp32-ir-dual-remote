@@ -23,18 +23,32 @@ uint8_t  IRlen     = 0;
 // const uint8_t  IR_RECV_PIN  = 2;      // GPIO2 (pin 4)
 const uint8_t  IR_SEND_PIN = 0;      // GPIO1 (pin 10)
 const uint8_t  LED_PIN  = 3;          // GPIO3 (pin 5)
+const uint8_t  CUSTOM_IR_PIN = IR_SEND_PIN; 
 
 // IRrecv irrecv(IR_RECV_PIN);
-IRsend irsend(IR_SEND_PIN);
-decode_results results;
+// IRsend irsend(IR_SEND_PIN);
 
 // TV model name
 const char* tvModel_LG = "LG";
 const char* tvModel_SAMSUNG = "SAMSUNG";
-
 char* tvModel = nullptr;   
 
+hw_timer_t* _timer = nullptr;
+volatile bool _burst = false;
+void sendNEC_custom(uint32_t data, uint8_t nbits);
+void sendSAMSUNG_custom(uint32_t data, uint8_t nbits);
+void sendRaw_custom(const uint16_t buf[], uint16_t len, uint16_t hz);
+
 TaskHandle_t irTaskHandle = nullptr;
+
+void onTimer() 
+{
+    if(_burst) 
+    {
+        // toggle pin each interrupt
+        digitalWrite(CUSTOM_IR_PIN, !digitalRead(CUSTOM_IR_PIN));
+    }
+}
 
 void onRequest(AsyncWebServerRequest *request) {
     // dummy callback function for handling params, etc.
@@ -72,98 +86,70 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
         request->send(400, "text/plain", "Unknown brand");
         return;
     }
-    // Serial.printf("command=%s, parsed=%s, brand=%s\n", command, doc["parsed"].as<String>().c_str(), brand);
-
 
     // Check which button was pressed
     // Serial.printf("command: %s\n", command);
-    if( strncmp(command,"pwr",3) == 0 )
+    if( strncmp(command,"pwr",3) == 0 ) 
     {
       IRcmd = codes->btnOnOff;
-    //   IRpending = true;
     }
     else if(  strncmp(command,"up",2) == 0  )
     {
       IRcmd = codes->btnUp;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"left",4) == 0  )
     {
       IRcmd = codes->btnLeft;
-    //   IRpending = true;
     }
 
     else if(  strncmp(command,"ok",2) == 0  )
     {
       IRcmd = codes->btnOK;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"right",5) == 0  )
     {
       IRcmd = codes->btnRight;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"down",4) == 0  )
     {
       IRcmd = codes->btnDown;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"back",4) == 0  )
     {
       IRcmd = codes->btnReturn;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"home",4) == 0  )
     {
       IRcmd = codes->btnHome;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"play",4) == 0  )
     {
       IRcmd = codes->btnPlayPause;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"volup",5) == 0  )
     {
       IRcmd = codes->btnVolUp;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"chup",4) == 0  )
     {
       IRcmd = codes->btnChUp;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"volmute",7) == 0  )
     {
       IRcmd = codes->btnVolEnter;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"chmiddle",8) == 0  )
     {
       IRcmd = codes->btnChEnter;
-    //   IRpending = true;
     }
 
     else if(  strncmp(command,"volminus",8) == 0  )
     {
       IRcmd = codes->btnVolDown;
-    //   IRpending = true;
     }
-
     else if(  strncmp(command,"chminus",7) == 0  )
     {
       IRcmd = RemoteCodes_LG.btnChDown;
-    //   IRpending = true;
     }
     else
     {
@@ -177,31 +163,6 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   }
 }
 
-void irTask(void* p) {
-  for(;;) {
-    if (IRpending && tvModel != nullptr) 
-    {
-        IRpending = false;
-        digitalWrite(LED_PIN, HIGH);
-    
-        if(tvModel == tvModel_LG) 
-        {
-            noInterrupts(); 
-            irsend.sendNEC(IRcmd, IRlen, 1);
-            interrupts();
-        } 
-        else if(tvModel == tvModel_SAMSUNG) 
-        {
-            irsend.sendSAMSUNG(IRcmd, IRlen);
-        }
-        delay(100);
-        digitalWrite(LED_PIN, LOW);
-    }
-    // Yield to other tasks
-    vTaskDelay(pdMS_TO_TICKS(1));
-  }
-}
-
 void setup() {
   // Initialize serial communication at 115200 baud rate
   Serial.begin(115200);
@@ -212,8 +173,8 @@ void setup() {
 //   Serial.println("IR Receiver ready");
 
   // Initialize IR transmitter
-  irsend.begin();
-  Serial.println("IR Transmitter ready");
+//   irsend.begin();
+//   Serial.println("IR Transmitter ready");
 
   // Initialize LED
   pinMode(LED_PIN, OUTPUT);
@@ -262,15 +223,94 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
 
-  // create thread for IR sending with higher priority than WiFi
-  xTaskCreate(
-    irTask, "IR Task", 2048, NULL,
-    tskIDLE_PRIORITY + 10 ,            // priority 5 (higher than WiFi)
-    &irTaskHandle
-  );  
+  pinMode(CUSTOM_IR_PIN, OUTPUT);
+  digitalWrite(CUSTOM_IR_PIN, LOW);
+
+  // configure hardware timer 1, divider 80 -> 1MHz tick
+  _timer = timerBegin(1, 80, true);
+  timerAttachInterrupt(_timer, &onTimer, true);
 }
 
 void loop() {
-  delay(100);
+    if (IRpending && tvModel != nullptr) 
+    {
+        IRpending = false;
+        digitalWrite(LED_PIN, HIGH);
+    
+        if(tvModel == tvModel_LG) 
+        {
+            // irsend.sendNEC(IRcmd, IRlen, 1);
+            sendNEC_custom(IRcmd, IRlen);
+        } 
+        else if(tvModel == tvModel_SAMSUNG) 
+        {
+            // irsend.sendSAMSUNG(IRcmd, IRlen);
+            sendSAMSUNG_custom(IRcmd, IRlen);
+        }
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
+    }
+    // Yield to other tasks
+    vTaskDelay(pdMS_TO_TICKS(1));
 }
 
+void enableCarrier(uint16_t khz) {
+  // set alarm to half period in microseconds
+  uint32_t interval = 1000UL / khz / 2;     // 1000 kHz
+  timerAlarmWrite(_timer, interval, true);
+  timerAlarmEnable(_timer);
+}
+
+void disableCarrier() {
+  timerAlarmDisable(_timer);
+  digitalWrite(CUSTOM_IR_PIN, LOW);
+}
+
+void mark(uint16_t usec) {
+  _burst = true;
+  delayMicroseconds(usec);
+  _burst = false;
+}
+
+void space(uint16_t usec) {
+  _burst = false;
+  delayMicroseconds(usec);
+}
+
+void sendNEC_custom(uint32_t data, uint8_t nbits) {
+  enableCarrier(38);
+  // NEC header
+  mark(9000); space(4500);
+  // Data bits
+  for (uint8_t i = 0; i < nbits; i++) {
+    if (data & 1) { mark(560); space(1690); }
+    else           { mark(560); space(560); }
+    data >>= 1;
+  }
+  // NEC footer
+  mark(560);
+  disableCarrier();
+}
+
+void sendSAMSUNG_custom(uint32_t data, uint8_t nbits) {
+  enableCarrier(38);
+  // Samsung header
+  mark(4500); space(4500);
+  // Data bits
+  for (uint8_t i = 0; i < nbits; i++) {
+    if (data & 1) { mark(560); space(560); }
+    else           { mark(560); space(1690); }
+    data >>= 1;
+  }
+  // Samsung footer
+  mark(560);
+  disableCarrier();
+}
+
+void sendRaw_custom(const uint16_t buf[], uint16_t len, uint16_t hz) {
+  enableCarrier(hz);
+  for (uint16_t i = 0; i < len; i++) {
+    if (i & 1) space(buf[i]); else mark(buf[i]);
+  }
+  disableCarrier();
+}
