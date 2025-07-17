@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <IRremoteESP8266.h>
 #include <IRrecv.h>
 #include <IRsend.h>
 #include <IRutils.h>
@@ -21,11 +20,11 @@ uint32_t IRcmd     = 0;
 uint8_t  IRlen     = 0;
 
 // Change this to DATA pin on which you connected the IR receiver
-const uint8_t  IR_RECV_PIN  = 2;      // GPIO2 (pin 4)
-const uint8_t  IR_SEND_PIN = 1;      // GPIO1 (pin 10)
+// const uint8_t  IR_RECV_PIN  = 2;      // GPIO2 (pin 4)
+const uint8_t  IR_SEND_PIN = 0;      // GPIO1 (pin 10)
 const uint8_t  LED_PIN  = 3;          // GPIO3 (pin 5)
 
-IRrecv irrecv(IR_RECV_PIN);
+// IRrecv irrecv(IR_RECV_PIN);
 IRsend irsend(IR_SEND_PIN);
 decode_results results;
 
@@ -34,6 +33,8 @@ const char* tvModel_LG = "LG";
 const char* tvModel_SAMSUNG = "SAMSUNG";
 
 char* tvModel = nullptr;   
+
+TaskHandle_t irTaskHandle = nullptr;
 
 void onRequest(AsyncWebServerRequest *request) {
     // dummy callback function for handling params, etc.
@@ -60,10 +61,12 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
         codes = &RemoteCodes_LG;
         IRlen = codes->codeLen;
         tvModel = (char*)tvModel_LG;
+        request->send(200, "text/plain", "Ok");
     } else if (strcasecmp(brand, "SAMSUNG") == 0) {
         codes = &RemoteCodes_SAMSUNG;
         IRlen = codes->codeLen;
         tvModel = (char*)tvModel_SAMSUNG;
+        request->send(200, "text/plain", "Ok");
     } else {
         tvModel = nullptr; // Unknown brand
         request->send(400, "text/plain", "Unknown brand");
@@ -73,102 +76,129 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
 
 
     // Check which button was pressed
-    Serial.println("command: " + String(command));
+    // Serial.printf("command: %s\n", command);
     if( strncmp(command,"pwr",3) == 0 )
     {
       IRcmd = codes->btnOnOff;
-      IRpending = true;
+    //   IRpending = true;
     }
     else if(  strncmp(command,"up",2) == 0  )
     {
       IRcmd = codes->btnUp;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"left",4) == 0  )
     {
       IRcmd = codes->btnLeft;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"ok",2) == 0  )
     {
       IRcmd = codes->btnOK;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"right",5) == 0  )
     {
       IRcmd = codes->btnRight;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"down",4) == 0  )
     {
       IRcmd = codes->btnDown;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"back",4) == 0  )
     {
       IRcmd = codes->btnReturn;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"home",4) == 0  )
     {
       IRcmd = codes->btnHome;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"play",4) == 0  )
     {
       IRcmd = codes->btnPlayPause;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"volup",5) == 0  )
     {
       IRcmd = codes->btnVolUp;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"chup",4) == 0  )
     {
       IRcmd = codes->btnChUp;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"volmute",7) == 0  )
     {
       IRcmd = codes->btnVolEnter;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"chmiddle",8) == 0  )
     {
       IRcmd = codes->btnChEnter;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"volminus",8) == 0  )
     {
       IRcmd = codes->btnVolDown;
-      IRpending = true;
+    //   IRpending = true;
     }
 
     else if(  strncmp(command,"chminus",7) == 0  )
     {
       IRcmd = RemoteCodes_LG.btnChDown;
-      IRpending = true;
+    //   IRpending = true;
     }
     else
     {
       Serial.println("Don't recognize cmd");
     }
 
-    // Return HTTP 200 code (success) to the client
-    request->send(200, "text/plain", "Ok");
+    request->onDisconnect([]()
+    {
+        IRpending = true;
+    });
+  }
+}
+
+void irTask(void* p) {
+  for(;;) {
+    if (IRpending && tvModel != nullptr) 
+    {
+        IRpending = false;
+        digitalWrite(LED_PIN, HIGH);
+    
+        if(tvModel == tvModel_LG) 
+        {
+            noInterrupts(); 
+            irsend.sendNEC(IRcmd, IRlen, 1);
+            interrupts();
+        } 
+        else if(tvModel == tvModel_SAMSUNG) 
+        {
+            irsend.sendSAMSUNG(IRcmd, IRlen);
+        }
+        delay(100);
+        digitalWrite(LED_PIN, LOW);
+    }
+    // Yield to other tasks
+    vTaskDelay(pdMS_TO_TICKS(1));
   }
 }
 
@@ -178,11 +208,10 @@ void setup() {
   delay(500);
 
   // Initialize IR receiver
-  irrecv.enableIRIn();
-  Serial.println("IR Receiver ready");
+//   irrecv.enableIRIn();
+//   Serial.println("IR Receiver ready");
 
   // Initialize IR transmitter
-  pinMode(IR_SEND_PIN, OUTPUT);
   irsend.begin();
   Serial.println("IR Transmitter ready");
 
@@ -232,24 +261,16 @@ void setup() {
 
   server.begin();
   Serial.println("HTTP server started");
+
+  // create thread for IR sending with higher priority than WiFi
+  xTaskCreate(
+    irTask, "IR Task", 2048, NULL,
+    tskIDLE_PRIORITY + 10 ,            // priority 5 (higher than WiFi)
+    &irTaskHandle
+  );  
 }
 
 void loop() {
-    // Wait for a new command
-  if (IRpending && tvModel != nullptr) {
-    Serial.printf("Sending code 0x%X to %s TV\n", IRcmd, tvModel);
-    digitalWrite(LED_PIN, HIGH);
-
-    if(tvModel == tvModel_LG) {
-      irsend.sendNEC(IRcmd, IRlen);
-    } else if(tvModel == tvModel_SAMSUNG) {
-      irsend.sendSAMSUNG(IRcmd, IRlen);
-    } 
-    IRpending = false;
-    delay(200);  // Give some time for the IR signal to be sent
-
-    digitalWrite(LED_PIN, LOW);
-  }
-
-  delay(10);
+  delay(100);
 }
+
