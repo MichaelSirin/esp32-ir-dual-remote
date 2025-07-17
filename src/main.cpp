@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <IRrecv.h>
-#include <IRsend.h>
 #include <IRutils.h>
 #include <IRCodes.h>
 
@@ -21,12 +20,12 @@ uint8_t  IRlen     = 0;
 
 // Change this to DATA pin on which you connected the IR receiver
 // const uint8_t  IR_RECV_PIN  = 2;      // GPIO2 (pin 4)
-const uint8_t  IR_SEND_PIN = 0;      // GPIO1 (pin 10)
+const uint8_t  IR_SEND_PIN1 = 0;      // GPIO0 (pin 9)
+const uint8_t  IR_SEND_PIN2 = 1;      // GPIO1 (pin 10)
 const uint8_t  LED_PIN  = 3;          // GPIO3 (pin 5)
-const uint8_t  CUSTOM_IR_PIN = IR_SEND_PIN; 
+const uint8_t  CUSTOM_IR_PIN = IR_SEND_PIN1; 
 
 // IRrecv irrecv(IR_RECV_PIN);
-// IRsend irsend(IR_SEND_PIN);
 
 // TV model name
 const char* tvModel_LG = "LG";
@@ -173,10 +172,6 @@ void setup() {
 //   irrecv.enableIRIn();
 //   Serial.println("IR Receiver ready");
 
-  // Initialize IR transmitter
-//   irsend.begin();
-//   Serial.println("IR Transmitter ready");
-
   // Initialize LED
   pinMode(LED_PIN, OUTPUT);
 
@@ -240,12 +235,10 @@ void loop() {
     
         if(tvModel == tvModel_LG) 
         {
-            // irsend.sendNEC(IRcmd, IRlen, 1);
             sendNEC_custom(IRcmd, IRlen);
         } 
         else if(tvModel == tvModel_SAMSUNG) 
         {
-            // irsend.sendSAMSUNG(IRcmd, IRlen);
             sendSAMSUNG_custom(IRcmd, IRlen);
         }
         delay(100);
@@ -284,8 +277,9 @@ void sendNEC_custom(uint32_t data, uint8_t nbits) {
   mark(9000); space(4500);
   // Data bits
   for (int8_t i = nbits - 1; i >= 0; i--) {
-    if (data & (1UL << i)) { mark(560); space(1690); }
-    else                   { mark(560); space(560); }
+    mark(560);
+    if (data & (1UL << i)) { space(1690); }
+    else                   { space(560); }
     }
   // NEC footer
   mark(560);
@@ -297,12 +291,10 @@ void sendSAMSUNG_custom(uint32_t data, uint8_t nbits) {
   // Samsung header
   mark(4500); space(4500);
   // Data bits
-//   for (uint8_t i = 0; i < nbits; i++) {
   for (int8_t i = nbits - 1; i >= 0; i--) {
-
-    if (data & (1UL << i)) { mark(560); space(560); }
-    else                   { mark(560); space(1690); }
-    data >>= 1;
+    mark(560);
+    if (data & (1UL << i)) { space(1690); }
+    else                   { space(560); }
   }
   // Samsung footer
   mark(560);
@@ -316,3 +308,4 @@ void sendRaw_custom(const uint16_t buf[], uint16_t len, uint16_t hz) {
   }
   disableCarrier();
 }
+
