@@ -32,7 +32,7 @@ A **wireless web‑based remote** built on an ESP32, capable of controlling **LG
 | IR LED Channel B | GPIO2     | IR LED + transistor |
 | (Optional LED)   | GPIO3     | Status LED          |
 
-![Board](images/ESP32-C3-DevKitM-1 .png)
+![Board](./images/ESP32-C3-DevKitM-1%20.png)
 
 For more information on the ESP32 platform, refer to:
 * **Official Espressif ESP32 Series documentation**: [https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html](https://docs.espressif.com/projects/esp-idf/en/v4.3/esp32c3/hw-reference/esp32c3/user-guide-devkitm-1.html)
@@ -45,7 +45,7 @@ For more information on the ESP32 platform, refer to:
 2. Clone this repo:
 
    ```bash
-   git clone https://github.com/yourname/esp32-ir-dual-remote.git
+   git clone https://github.com/MichaelSirin/esp32-ir-dual-remote.git
    cd esp32-ir-dual-remote
    ```
 3. **Dependencies** in `platformio.ini`:
