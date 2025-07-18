@@ -1,12 +1,23 @@
 {
 	"folders": [
-		{
-			"path": "../../../../C_Projects/esp32_wifi_remote"
-		},
-		{
-			"name": "esp32_ir_receiver",
-			"path": "."
-		}
-	],
-    "settings": {}
+        {
+            "name": "esp32_ir_receiver",
+            "path": "."
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "string": "cpp",
+            "filesystem": "cpp",
+            "stdexcept": "cpp",
+            "array": "cpp",
+            "deque": "cpp",
+            "unordered_map": "cpp",
+            "unordered_set": "cpp",
+            "vector": "cpp",
+            "string_view": "cpp",
+            "initializer_list": "cpp",
+            "regex": "cpp"
+        }
+    }
 }
