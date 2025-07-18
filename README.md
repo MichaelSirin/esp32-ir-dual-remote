@@ -103,6 +103,17 @@ a. In VS Code, open the **PlatformIO** extension (house icon) in the left activi
 
 ---
 
+## Corporate VPN Access
+If you’re outside the office, first establish a VPN connection to the Sirin internal network. Then navigate to the internal IP:
+
+```text
+http://192.168.88.121/
+```
+
+Make sure your PC or mobile device remains connected to the same Wi‑Fi network (or VPN) as the ESP32.
+
+---
+
 ## 🎛 Web Interface
 
 1. **Brand Selector**: Choose **LG** or **Samsung**.
