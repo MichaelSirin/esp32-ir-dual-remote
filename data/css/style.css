@@ -35,6 +35,11 @@ body
   margin-right: 20px;    
 }
 
+.channel-selector {
+  position: absolute;
+  top: 10px;
+}
+
 .controls {
   position:relative;
 }

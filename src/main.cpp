@@ -23,7 +23,7 @@ uint8_t  IRlen     = 0;
 const uint8_t  IR_SEND_PIN1 = 0;      // GPIO0 (pin 9)
 const uint8_t  IR_SEND_PIN2 = 1;      // GPIO1 (pin 10)
 const uint8_t  LED_PIN  = 3;          // GPIO3 (pin 5)
-const uint8_t  CUSTOM_IR_PIN = IR_SEND_PIN1; 
+uint8_t  CUSTOM_IR_PIN = IR_SEND_PIN1; 
 
 // IRrecv irrecv(IR_RECV_PIN);
 
@@ -67,6 +67,7 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
   if (!error) {
     const char* command = doc["cmd"];
     const char* brand   = doc["brand"]   | "LG";    // LG is default
+    const char* channel = doc["channel"] | "left"; // Default channel is left
     
     // chose the remote codes based on the brand
     const Remote_t* codes = nullptr;
@@ -83,6 +84,15 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
     } else {
         tvModel = nullptr; // Unknown brand
         request->send(400, "text/plain", "Unknown brand");
+        return;
+    }
+
+    if(strcmp(channel, "left") == 0) {
+        CUSTOM_IR_PIN = IR_SEND_PIN1; // Left channel
+    } else if(strcmp(channel, "right") == 0) {
+        CUSTOM_IR_PIN = IR_SEND_PIN2; // Right channel
+    } else {
+        request->send(400, "text/plain", "Unknown channel");
         return;
     }
 
@@ -155,7 +165,7 @@ void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t in
       return;
     }
 
-    Serial.printf("TV model: %s, Command: %s, HEX code: %08X\n", tvModel, command, IRcmd);
+    Serial.printf("TV model: %s, Channel: %s, Command: %s, HEX code: %08X\n", tvModel, channel, command, IRcmd);
     request->onDisconnect([]()
     {
         IRpending = true;
@@ -219,8 +229,11 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
 
-  pinMode(CUSTOM_IR_PIN, OUTPUT);
-  digitalWrite(CUSTOM_IR_PIN, LOW);
+  // Initialize IR sending
+  pinMode(IR_SEND_PIN1, OUTPUT);
+  digitalWrite(IR_SEND_PIN1, LOW);
+  pinMode(IR_SEND_PIN2, OUTPUT);
+  digitalWrite(IR_SEND_PIN2, LOW);
 
   // configure hardware timer 1, divider 80 -> 1MHz tick
   _timer = timerBegin(1, 80, true);
