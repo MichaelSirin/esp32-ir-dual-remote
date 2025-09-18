@@ -1,6 +1,42 @@
 #ifndef SK_IR_CODES_H
 #define SK_IR_CODES_H
 
+/*
+IR Codes for LG and Samsung TVs 
+--- LG ---
+20DFD02F - NEC - input
+20DFC23D - NEC - menu
+20DF14EB - NEC - back
+20DF5FA0 - NEC - instop
+20DFDF20 - NEC - instart
+20DF8877 - NEC - 1
+20DF48B7 - NEC - 2
+20DFC837 - NEC - 3
+20DF28D7 - NEC - 4
+20DFA857 - NEC - 5
+20DF6897 - NEC - 6
+20DFE817 - NEC - 7
+20DF18E7 - NEC - 8 
+20DF9867 - NEC - 9
+20DF08F7 - NEC - 0
+20DF906F - NEC - mute
+
+--- Sams ---
+E0E06798 - SAMSUNG - power
+E0E04BB4 - SAMSUNG - btn123
+E0E01AE5 - SAMSUNG - back
+E0E09E61 - SAMSUNG - home
+E0E0E01F - SAMSUNG - vol Up
+E0E0D02F - SAMSUNG - vol Down
+E0E0F00F - SAMSUNG - mute
+E0E048B7 - SAMSUNG - ch Up
+E0E008F7 - SAMSUNG - ch Down
+E0E006F9 - SAMSUNG - Up
+E0E08679 - SAMSUNG - Down
+E0E046B9 - SAMSUNG - Right
+E0E0A659 - SAMSUNG - Left
+E0E016E9 - SAMSUNG - Ok
+*/
 // Define Remote structure (NEC, 38 kHz, 32 bit)
 typedef struct Remote_t {
   unsigned int  codeLen;
